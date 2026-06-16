@@ -1,0 +1,34 @@
+# --- secrets / config (NEVER commit) ---
+.env
+.env.*
+!.env.example
+config/nexus.toml
+*.key
+*.pem
+service-role*.txt
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# --- runtime / local state ---
+*.log
+*.sqlite
+*.db
+data/
+screenshots/
+logs/
+
+# --- editor / os ---
+.vscode/
+.idea/
+.DS_Store

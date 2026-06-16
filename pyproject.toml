@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexus-harness"
+version = "0.0.1"
+description = "A model-agnostic conversational agent harness for the homelab."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "TBD" }
+authors = [{ name = "Nexus" }]
+
+# Core runtime deps are intentionally minimal in Phase 0. Channel- and
+# sense-specific deps live in optional extras so the skeleton stays light.
+dependencies = [
+    "pydantic>=2.6",
+    "tomli>=2.0; python_version < '3.11'",
+    "python-dotenv>=1.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+# --- providers ---
+anthropic = ["anthropic>=0.40"]
+openai = ["openai>=1.40"]
+
+# --- memory / db ---
+supabase = ["supabase>=2.5", "psycopg[binary]>=3.1"]
+
+# --- channels ---
+telegram = ["aiogram>=3.4"]
+discord = ["discord.py>=2.3"]
+slack = ["slack-bolt>=1.18"]
+web = ["fastapi>=0.110", "uvicorn[standard]>=0.29", "websockets>=12.0"]
+
+# --- senses ---
+voice = ["openai-whisper>=20231117", "sounddevice>=0.4"]
+vision = ["pillow>=10.0", "mss>=9.0"]
+control = ["pyautogui>=0.9"]
+
+# --- dev ---
+dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.9"]
+
+[project.scripts]
+nexus = "nexus.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

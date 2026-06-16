@@ -18,11 +18,14 @@ class OpenAIProvider:
         streaming=True, tool_calling=True, vision=True, json_mode=True, max_context_tokens=128_000
     )
 
-    def __init__(self, *, api_key: str | None, model: str, base_url: str | None = None) -> None:
+    def __init__(
+        self, *, api_key: str | None, model: str, base_url: str | None = None, client=None
+    ) -> None:
         self.model = model
         self._api_key = api_key
         self._base_url = base_url
-        self._client = None
+        # Injected client → network-free translation tests; else built lazily.
+        self._client = client
 
     def _ensure_client(self):
         if self._client is None:

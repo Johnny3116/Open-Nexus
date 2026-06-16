@@ -17,10 +17,12 @@ class AnthropicProvider:
         streaming=True, tool_calling=True, vision=True, json_mode=False, max_context_tokens=200_000
     )
 
-    def __init__(self, *, api_key: str, model: str) -> None:
+    def __init__(self, *, api_key: str, model: str, client=None) -> None:
         self.model = model
         self._api_key = api_key
-        self._client = None
+        # An injected client lets us unit-test the translation without the SDK
+        # or a network. In production it's built lazily on first use.
+        self._client = client
 
     def _ensure_client(self):
         if self._client is None:

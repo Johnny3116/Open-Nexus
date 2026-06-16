@@ -10,6 +10,7 @@ vision-capable provider; cheap summary → local).
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel
@@ -53,4 +54,24 @@ class Provider(Protocol):
         tools: list[dict] | None = None,
     ) -> ProviderResponse:
         """Run one completion and return a normalised ProviderResponse."""
+        ...
+
+
+@runtime_checkable
+class SupportsStreaming(Protocol):
+    """Optional capability: yield text chunks as they arrive.
+
+    A provider advertises this via ``capabilities.streaming`` and implements
+    ``stream``. The loop/API can prefer it when streaming output is wanted; code
+    that needs a single answer just calls ``complete``.
+    """
+
+    def stream(
+        self,
+        *,
+        system: str,
+        messages: list[Message],
+        tools: list[dict] | None = None,
+    ) -> AsyncIterator[str]:
+        """Yield response text incrementally."""
         ...

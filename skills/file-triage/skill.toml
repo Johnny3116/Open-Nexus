@@ -1,0 +1,10 @@
+id = "file-triage"
+name = "File triage"
+version = "0.1.0"
+entrypoint = "open_nexus.tools.files"
+
+[permissions]
+network = false
+filesystem = true
+shell = false
+requires_approval = true

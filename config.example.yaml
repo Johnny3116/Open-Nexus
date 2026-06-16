@@ -1,0 +1,31 @@
+# Open-Nexus provider routing. Copy to config.yaml and edit.
+# Secrets do NOT live here — API keys come from the environment (.env).
+# Adding a new AI/API = add a block here + (if needed) an adapter, never a
+# core-loop change.
+#
+# Phase 0 needs no config at all: with no config.yaml, the default is `echo`
+# (no network, no key, no cost). Point `default` at a real provider when ready.
+
+default: echo
+fallback: []
+
+providers:
+  echo:
+    type: fake
+
+  claude:
+    type: anthropic
+    model: claude-sonnet-4-6
+
+  gpt:
+    type: openai
+    model: gpt-4o
+
+  ollama:
+    type: local                       # OpenAI-compatible endpoint
+    base_url: http://localhost:11434/v1
+    model: qwen2.5-coder
+
+# Example of a real routing setup (uncomment + set keys in .env):
+# default: claude
+# fallback: [gpt, ollama]

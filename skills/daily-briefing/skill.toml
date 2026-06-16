@@ -1,0 +1,10 @@
+id = "daily-briefing"
+name = "Daily briefing"
+version = "0.1.0"
+entrypoint = "open_nexus.tools.research"
+
+[permissions]
+network = true
+filesystem = false
+shell = false
+requires_approval = false

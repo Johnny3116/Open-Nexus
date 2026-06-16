@@ -1,0 +1,15 @@
+# Local Postgres + pgvector for integration tests (the persistent-Nexus phase).
+# Phase 0 needs none of this — it runs on SQLite. For the full local stack
+# (Studio, auth, etc.) prefer the Supabase CLI (`supabase start`); this compose
+# file is the minimal DB for `pytest -m integration`.
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: nexus
+      POSTGRES_PASSWORD: nexus
+      POSTGRES_DB: nexus
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./src/open_nexus/memory/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro

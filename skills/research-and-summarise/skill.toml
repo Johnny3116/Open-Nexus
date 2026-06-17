@@ -2,6 +2,8 @@ id = "research-and-summarise"
 name = "Research and summarise"
 version = "0.1.0"
 entrypoint = "open_nexus.tools.research"
+description = "Research a topic across sources and return a tight, cited summary."
+keywords = ["research", "summarise", "summarize", "look into", "latest", "find out"]
 
 [permissions]
 network = true

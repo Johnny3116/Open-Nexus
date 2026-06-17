@@ -2,6 +2,8 @@ id = "file-triage"
 name = "File triage"
 version = "0.1.0"
 entrypoint = "open_nexus.tools.files"
+description = "Sort, rename, and organise files in a target directory."
+keywords = ["file", "files", "sort", "organise", "organize", "rename", "clean up", "tidy"]
 
 [permissions]
 network = false

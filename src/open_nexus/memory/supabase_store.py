@@ -31,9 +31,39 @@ class SupabaseStore:
     def append_message(
         self, *, session_id: str, role: Role, content: str, tool_name: str | None = None
     ) -> StoredMessage:
-        # TODO(phase-1): insert into `messages`, populate embedding async.
-        raise NotImplementedError("SupabaseStore.append_message: Phase 1")
+        client = self._ensure_client()
+        row = {
+            "session_id": session_id,
+            "role": role.value,
+            "content": content,
+            "tool_name": tool_name,
+        }
+        # id, created_at (and later the embedding) are filled by the DB.
+        data = client.table("messages").insert(row).execute().data[0]
+        return StoredMessage(
+            id=str(data["id"]),
+            session_id=session_id,
+            role=Role(data["role"]),
+            content=data["content"],
+            tool_name=data.get("tool_name"),
+            created_at=data["created_at"],
+        )
 
     def recent(self, *, session_id: str, limit: int = 20) -> list[Message]:
-        # TODO(phase-1): select recent rows for the session.
-        raise NotImplementedError("SupabaseStore.recent: Phase 1")
+        client = self._ensure_client()
+        rows = (
+            client.table("messages")
+            .select("role,content,tool_name,created_at")
+            .eq("session_id", session_id)
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+            .data
+        )
+        # fetched newest-first; return oldest-first for prompt ordering.
+        return [
+            Message(role=Role(r["role"]), content=r["content"], tool_name=r.get("tool_name"))
+            for r in reversed(rows)
+        ]
+        # TODO(persistent phase): layered retrieval (FTS + vector) via retrieval.py,
+        # and FK-backed session/identity resolution (sessions + channel_identities).

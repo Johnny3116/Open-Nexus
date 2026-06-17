@@ -982,6 +982,7 @@ web = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "fastapi" },
     { name = "mypy" },
     { name = "pre-commit" },
     { name = "pytest" },
@@ -1009,6 +1010,7 @@ provides-extras = ["anthropic", "openai", "supabase", "telegram", "discord", "we
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "fastapi", specifier = ">=0.110" },
     { name = "mypy", specifier = ">=1.10" },
     { name = "pre-commit", specifier = ">=3.7" },
     { name = "pytest", specifier = ">=8.2" },

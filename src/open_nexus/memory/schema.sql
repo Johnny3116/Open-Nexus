@@ -39,7 +39,10 @@ create table if not exists sessions (
 
 create table if not exists messages (
   id uuid primary key default gen_random_uuid(),
-  session_id uuid references sessions(id),
+  -- session_id is text for now (matches SQLiteStore semantics, e.g. 'terminal:local').
+  -- The FK-backed uuid sessions + cross-channel channel_identities resolution is
+  -- the next persistent-phase step; messages will then reference sessions(id).
+  session_id text not null,
   role text not null,
   content text not null,
   tool_name text,

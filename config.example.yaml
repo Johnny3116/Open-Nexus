@@ -29,3 +29,11 @@ providers:
 # Example of a real routing setup (uncomment + set keys in .env):
 # default: claude
 # fallback: [gpt, ollama]
+
+# Memory backend. Phase 0 default is SQLite (zero setup). Switch to Supabase for
+# the persistent deployment (needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in .env;
+# apply src/open_nexus/memory/schema.sql first).
+memory:
+  backend: sqlite          # sqlite | supabase
+  path: nexus.sqlite       # used when backend == sqlite
+

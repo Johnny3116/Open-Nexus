@@ -10,6 +10,10 @@ import time
 from collections import defaultdict
 
 
+class RateLimited(Exception):
+    """Raised when a user exceeds their token bucket."""
+
+
 class TokenBucket:
     def __init__(self, *, capacity: int = 30, refill_per_sec: float = 0.5) -> None:
         self.capacity = capacity

@@ -34,6 +34,7 @@ dev = [
     "mypy>=1.10",
     "pre-commit>=3.7",
     "types-pyyaml>=6.0",
+    "fastapi>=0.110",  # for the API TestClient in tests/unit
 ]
 
 [build-system]

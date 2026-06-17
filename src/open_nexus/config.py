@@ -40,18 +40,26 @@ class ProvidersConfig(BaseModel):
     providers: dict[str, ProviderConfig] = {}
 
 
+class MemoryConfig(BaseModel):
+    backend: str = "sqlite"  # 'sqlite' (Phase 0) | 'supabase' (persistent)
+    path: str = "nexus.sqlite"  # SQLite file when backend == 'sqlite'
+
+
 class Config(BaseModel):
     secrets: Secrets
     routing: ProvidersConfig
+    memory: MemoryConfig = MemoryConfig()
     identity_dir: str = "identity"
-    memory_path: str = "nexus.sqlite"  # SQLite file for the deployed Phase-0 run
 
 
 def load_config(path: str | Path = "config.yaml") -> Config:
-    """Load routing YAML (if present) + secrets from env."""
+    """Load routing + memory YAML (if present) + secrets from env."""
     path = Path(path)
     routing = ProvidersConfig()
+    memory = MemoryConfig()
     if path.exists():
         data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         routing = ProvidersConfig.model_validate(data)
-    return Config(secrets=Secrets(), routing=routing)
+        if "memory" in data:
+            memory = MemoryConfig.model_validate(data["memory"])
+    return Config(secrets=Secrets(), routing=routing, memory=memory)

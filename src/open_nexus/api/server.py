@@ -39,6 +39,10 @@ class MessageOut(BaseModel):
     session_id: str
 
 
+class ApprovalDecision(BaseModel):
+    id: str
+
+
 def build_app(gateway: Gateway) -> Any:
     """Return a FastAPI app exposing the v1 API over the given Gateway."""
     from fastapi import FastAPI, HTTPException
@@ -72,5 +76,38 @@ def build_app(gateway: Gateway) -> Any:
                 for m in history
             ],
         }
+
+    # --- approval flow: drive the ApprovalManager's pending queue ----------------
+
+    def _approvals():
+        if gateway.approvals is None:
+            raise HTTPException(status_code=404, detail="approvals not enabled")
+        return gateway.approvals
+
+    @app.get("/v1/tools/pending")
+    async def pending() -> dict[str, Any]:
+        return {
+            "pending": [
+                {
+                    "id": r.id,
+                    "tool_name": r.tool_name,
+                    "risk_level": r.risk_level.value,
+                    "summary": r.summary,
+                }
+                for r in _approvals().pending()
+            ]
+        }
+
+    @app.post("/v1/tools/approve")
+    async def approve(body: ApprovalDecision) -> dict[str, str]:
+        if not _approvals().approve(body.id):
+            raise HTTPException(status_code=404, detail="no such pending approval")
+        return {"status": "approved", "id": body.id}
+
+    @app.post("/v1/tools/reject")
+    async def reject(body: ApprovalDecision) -> dict[str, str]:
+        if not _approvals().reject(body.id):
+            raise HTTPException(status_code=404, detail="no such pending approval")
+        return {"status": "rejected", "id": body.id}
 
     return app

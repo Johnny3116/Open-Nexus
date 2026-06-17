@@ -21,15 +21,20 @@ from open_nexus.core.context import ContextAssembler
 from open_nexus.gateway.router import Gateway
 from open_nexus.memory.factory import build_store
 from open_nexus.providers.factory import build_router
+from open_nexus.safety.approval_manager import ApprovalManager
+from open_nexus.tools.factory import build_tools
 
 
 def build_gateway(cfg: Config) -> Gateway:
     """Assemble a Gateway from config. Shared by the chat and serve entrypoints."""
+    approvals = ApprovalManager()
     return Gateway(
         provider=build_router(cfg),
         store=build_store(cfg),
         assembler=ContextAssembler(identity_dir=cfg.identity_dir),
         active_model=cfg.routing.default,
+        tools=build_tools(approvals),
+        approvals=approvals,
     )
 
 

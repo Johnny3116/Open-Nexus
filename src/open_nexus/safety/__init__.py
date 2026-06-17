@@ -7,6 +7,7 @@ shell-capable skills, autonomous heartbeat).
 """
 
 from open_nexus.safety.approval import ApprovalGate
+from open_nexus.safety.approval_manager import ApprovalManager
 from open_nexus.safety.policy import SafetyPolicy
 
-__all__ = ["ApprovalGate", "SafetyPolicy"]
+__all__ = ["ApprovalGate", "ApprovalManager", "SafetyPolicy"]

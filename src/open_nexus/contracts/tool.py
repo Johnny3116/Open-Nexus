@@ -8,6 +8,7 @@ them need their own bespoke gate.
 
 from __future__ import annotations
 
+import uuid
 from enum import StrEnum
 from typing import Any
 
@@ -43,9 +44,32 @@ class ToolCall(BaseModel):
 
 
 class ApprovalRequest(BaseModel):
-    """A pending action awaiting explicit human confirmation."""
+    """A pending action awaiting explicit human confirmation.
 
+    The ``id`` correlates the suspended tool call with an out-of-band approve /
+    reject decision (e.g. the API endpoints), so the gate knows which pending
+    action a decision resolves.
+    """
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex)
     tool_name: str
     risk_level: RiskLevel
     summary: str  # one-line, human-readable: what will happen
     arguments: dict[str, Any] = Field(default_factory=dict)
+
+
+class ToolRunStatus(StrEnum):
+    OK = "ok"
+    DENIED = "denied"  # blocked by the approval gate
+    ERROR = "error"
+
+
+class ToolRun(BaseModel):
+    """A record of one tool execution, logged to memory for the audit trail."""
+
+    tool_name: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    status: ToolRunStatus
+    risk_level: RiskLevel
+    summary: str = ""  # short result/error description
+    trace_id: str | None = None

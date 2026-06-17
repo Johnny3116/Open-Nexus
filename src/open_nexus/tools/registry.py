@@ -1,10 +1,17 @@
-"""ToolRegistry — register tools and run calls through the safety gate."""
+"""ToolRegistry — register tools and run calls through the safety gate.
+
+Every side-effecting tool passes the gate before executing, and every run is
+logged as a ``ToolRun`` to the memory store (the audit trail) when a store +
+session are supplied. Read-only tools run straight through; gated tools that are
+never approved never execute.
+"""
 
 from __future__ import annotations
 
 from typing import Any
 
-from open_nexus.contracts.tool import ApprovalRequest, ToolCall
+from open_nexus.contracts.message import Role
+from open_nexus.contracts.tool import ApprovalRequest, ToolCall, ToolRun, ToolRunStatus
 from open_nexus.observability.events import Event
 from open_nexus.observability.trace import Trace
 from open_nexus.safety.approval import ApprovalGate
@@ -33,8 +40,20 @@ class ToolRegistry:
             for t in self._tools.values()
         ]
 
-    async def run(self, call: ToolCall, *, trace: Trace | None = None) -> Any:
-        """Resolve → gate → execute. Side-effecting tools must pass the gate."""
+    async def run(
+        self,
+        call: ToolCall,
+        *,
+        trace: Trace | None = None,
+        store: Any = None,
+        session_id: str | None = None,
+    ) -> Any:
+        """Resolve → gate → execute. Side-effecting tools must pass the gate.
+
+        If ``store`` and ``session_id`` are given, a ``ToolRun`` is persisted via
+        ``store.append_message`` (role=tool) for the audit trail.
+        """
+        trace_id = trace.trace_id if trace else None
         tool = self._tools.get(call.name)
         if tool is None:
             return {"error": f"unknown tool: {call.name}"}
@@ -54,9 +73,36 @@ class ToolRegistry:
                     Event.APPROVAL_GRANTED if approved else Event.APPROVAL_DENIED, tool=tool.name
                 )
             if not approved:
+                self._log(
+                    store, session_id, tool, ToolRunStatus.DENIED, call, "denied by gate", trace_id
+                )
                 return {"error": "denied by approval gate", "tool": tool.name}
 
-        result = await tool.handler(**call.arguments)
+        try:
+            result = await tool.handler(**call.arguments)
+        except Exception as exc:  # noqa: BLE001 - record then re-raise
+            self._log(store, session_id, tool, ToolRunStatus.ERROR, call, str(exc), trace_id)
+            raise
         if trace:
             trace.emit(Event.TOOL_COMPLETED, tool=tool.name)
+        self._log(store, session_id, tool, ToolRunStatus.OK, call, str(result), trace_id)
         return result
+
+    @staticmethod
+    def _log(store, session_id, tool, status, call, summary, trace_id) -> None:
+        if store is None or session_id is None:
+            return
+        run = ToolRun(
+            tool_name=tool.name,
+            arguments=call.arguments,
+            status=status,
+            risk_level=tool.manifest.risk_level,
+            summary=summary[:500],
+            trace_id=trace_id,
+        )
+        store.append_message(
+            session_id=session_id,
+            role=Role.TOOL,
+            content=run.model_dump_json(),
+            tool_name=tool.name,
+        )

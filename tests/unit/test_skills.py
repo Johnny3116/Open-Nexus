@@ -84,3 +84,18 @@ def test_guardrail_human_authored_only():
     # No skill-creation/writing API exists on the loader (Phase 4 is read-only).
     assert HUMAN_AUTHORED_ONLY is True
     assert not any(hasattr(SkillLoader, m) for m in ("create", "write", "author", "generate"))
+
+
+def test_load_all_is_cached_until_reload(tmp_path):
+    import shutil
+
+    _write_skill(tmp_path, "good", keywords=["ok"])
+    loader = _loader(tmp_path)
+    first = loader.load_all()
+    assert [s.id for s in first] == ["good"]
+
+    shutil.rmtree(tmp_path / "good")  # remove from disk
+    assert [s.id for s in loader.load_all()] == ["good"]  # served from cache, no re-read
+
+    loader.reload()
+    assert loader.load_all() == []  # cache dropped → re-reads (now empty)

@@ -77,7 +77,11 @@ class Gateway:
         return reply, state.session_id
 
     async def run(self, channel: Channel) -> None:
-        """Serve one channel until its stream ends."""
+        """Serve one channel until its stream ends.
+
+        The channel listener is long-lived: one bad turn must never kill it. Every
+        per-message failure is contained and the loop continues.
+        """
         async for msg in channel.listen():
             try:
                 reply, _ = await self.handle(msg)
@@ -87,6 +91,14 @@ class Gateway:
             except RateLimited:
                 await send_reply(
                     channel, channel_user_id=msg.channel_user_id, text="Slow down a moment."
+                )
+                continue
+            except Exception:  # noqa: BLE001 - never let one turn crash the channel
+                _log.exception("unhandled error while handling a message")
+                await send_reply(
+                    channel,
+                    channel_user_id=msg.channel_user_id,
+                    text="Something went wrong handling that. It's been logged.",
                 )
                 continue
             await send_reply(channel, channel_user_id=msg.channel_user_id, text=reply)

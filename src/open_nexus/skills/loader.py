@@ -62,6 +62,7 @@ class Skill(BaseModel):
 class SkillLoader:
     def __init__(self, skills_dir: str | Path = "skills") -> None:
         self.dir = Path(skills_dir)
+        self._cache: list[Skill] | None = None
 
     def discover(self) -> list[Path]:
         """Skill dirs are those containing a machine-readable manifest."""
@@ -85,14 +86,25 @@ class SkillLoader:
         )
 
     def load_all(self) -> list[Skill]:
-        """Load every discoverable skill, skipping any that fail to parse."""
+        """Load every discoverable skill, skipping any that fail to parse.
+
+        Cached after the first call (skills are static at runtime); call
+        ``reload`` to pick up on-disk changes rather than re-reading every query.
+        """
+        if self._cache is not None:
+            return self._cache
         skills: list[Skill] = []
         for skill_dir in self.discover():
             try:
                 skills.append(self.load(skill_dir))
             except Exception as exc:  # noqa: BLE001 - fail closed: skip, don't crash
                 _log.warning("skipping unloadable skill at %s: %s", skill_dir, exc)
+        self._cache = skills
         return skills
+
+    def reload(self) -> None:
+        """Drop the cache so the next load_all/relevant re-reads from disk."""
+        self._cache = None
 
     def relevant(self, query: str, *, top_k: int = 3) -> list[Skill]:
         """Return up to ``top_k`` skills relevant to the query, best first.

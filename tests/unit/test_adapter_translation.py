@@ -73,6 +73,20 @@ async def test_openai_maps_content_and_tool_calls():
     resp = await provider.complete(system="s", messages=MESSAGES)
     assert resp.text == "sure"
     assert resp.tool_calls[0].name == "search"
+    # arguments are parsed from the JSON string into a real dict, not wrapped
+    assert resp.tool_calls[0].arguments == {"q": "x"}
+
+
+async def test_openai_tolerates_invalid_json_arguments():
+    message = SimpleNamespace(
+        content="",
+        tool_calls=[
+            SimpleNamespace(id="c1", function=SimpleNamespace(name="t", arguments="not json"))
+        ],
+    )
+    provider = OpenAIProvider(api_key="x", model="m", client=_FakeOpenAIClient(message))
+    resp = await provider.complete(system="s", messages=MESSAGES)
+    assert resp.tool_calls[0].arguments == {"raw": "not json"}
 
 
 async def test_openai_handles_no_tool_calls():

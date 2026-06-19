@@ -18,9 +18,12 @@ from open_nexus.contracts.tool import ApprovalRequest
 class ApprovalManager:
     """Tracks pending approvals and resolves them by id."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, default_timeout: float | None = None) -> None:
         # id -> (request, future-awaiting-the-decision)
         self._pending: dict[str, tuple[ApprovalRequest, asyncio.Future[bool]]] = {}
+        # If set, an unanswered approval auto-denies after this many seconds so a
+        # forgotten decision can't wedge the session forever. None = wait forever.
+        self.default_timeout = default_timeout
 
     def pending(self) -> list[ApprovalRequest]:
         return [req for req, _ in self._pending.values()]
@@ -29,13 +32,19 @@ class ApprovalManager:
         """Register the request as pending and await an approve/reject decision.
 
         Suitable as an ``ApprovalGate`` confirmer. The future is created on the
-        running loop, so resolve it from the same loop.
+        running loop, so resolve it from the same loop. If ``default_timeout`` is
+        set, an unanswered request auto-denies (fail closed) on expiry.
         """
         loop = asyncio.get_running_loop()
         fut: asyncio.Future[bool] = loop.create_future()
         self._pending[request.id] = (request, fut)
         try:
-            return await fut
+            if self.default_timeout is None:
+                return await fut
+            try:
+                return await asyncio.wait_for(fut, timeout=self.default_timeout)
+            except TimeoutError:
+                return False  # fail closed on an unanswered approval
         finally:
             self._pending.pop(request.id, None)
 

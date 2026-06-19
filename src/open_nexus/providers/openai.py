@@ -6,10 +6,27 @@ Imported lazily.
 
 from __future__ import annotations
 
+import json
+
 from open_nexus.contracts.message import Message
 from open_nexus.contracts.provider import ProviderCapabilities, ProviderResponse
 from open_nexus.contracts.tool import ToolCall
 from open_nexus.providers.base import to_chat_messages
+
+
+def _parse_arguments(raw: str | None) -> dict:
+    """OpenAI returns tool arguments as a JSON string; parse to a dict.
+
+    Falls back to wrapping the raw text if the model emitted invalid JSON, so a
+    malformed argument string degrades instead of crashing.
+    """
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return {"raw": raw}
+    return parsed if isinstance(parsed, dict) else {"raw": raw}
 
 
 class OpenAIProvider:
@@ -44,7 +61,11 @@ class OpenAIProvider:
         )
         choice = resp.choices[0].message
         calls = [
-            ToolCall(id=tc.id, name=tc.function.name, arguments={"raw": tc.function.arguments})
+            ToolCall(
+                id=tc.id,
+                name=tc.function.name,
+                arguments=_parse_arguments(tc.function.arguments),
+            )
             for tc in (choice.tool_calls or [])
         ]
         return ProviderResponse(text=choice.content or "", tool_calls=calls, raw=resp)

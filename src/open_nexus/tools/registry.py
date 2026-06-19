@@ -80,9 +80,13 @@ class ToolRegistry:
 
         try:
             result = await tool.handler(**call.arguments)
-        except Exception as exc:  # noqa: BLE001 - record then re-raise
+        except Exception as exc:  # noqa: BLE001 - a tool failing must not crash the turn
+            # Record the failure and hand the error back to the model as a result,
+            # so the loop (and the long-lived channel) keeps running.
             self._log(store, session_id, tool, ToolRunStatus.ERROR, call, str(exc), trace_id)
-            raise
+            if trace:
+                trace.emit(Event.ERROR, tool=tool.name, error=type(exc).__name__)
+            return {"error": str(exc), "tool": tool.name}
         if trace:
             trace.emit(Event.TOOL_COMPLETED, tool=tool.name)
         self._log(store, session_id, tool, ToolRunStatus.OK, call, str(result), trace_id)

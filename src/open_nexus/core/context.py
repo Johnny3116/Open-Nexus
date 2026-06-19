@@ -36,6 +36,11 @@ class ContextAssembler:
 
     def assemble(self, *, session_id: str, store: MemoryStore, user_text: str) -> AssembledContext:
         history = store.recent(session_id=session_id, limit=self.history_limit)
+        # Drop tool-audit rows (ToolRun records logged as role=tool) from the
+        # replayed prompt — they are an audit trail, not conversation, and would
+        # otherwise leak execution metadata (status/risk/trace_id) into context.
+        # Live tool results are fed in-turn by the loop, not from here.
+        conversational = [m for m in history if m.role != Role.TOOL]
         # retrieval: + Layer-1 core memory + FTS/vector recall (later phase)
-        messages = [*history, Message(role=Role.USER, content=user_text)]
+        messages = [*conversational, Message(role=Role.USER, content=user_text)]
         return AssembledContext(system=self._system_prompt(), messages=messages)

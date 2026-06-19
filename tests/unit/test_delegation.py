@@ -86,13 +86,16 @@ async def test_delegate_tool_runs_when_approved():
 
 
 async def test_delegate_tool_approved_but_unconfigured_still_fails_closed():
-    # Even past the gate, an unconfigured delegate refuses (second fail-closed layer).
+    # Even past the gate, an unconfigured delegate refuses (second fail-closed
+    # layer). The registry contains the exception and returns it as an error
+    # result so the turn/channel survives — the handoff still did not happen.
     async def approve(_req):
         return True
 
     reg = ToolRegistry(gate=ApprovalGate(confirmer=approve))
     reg.register(delegate_tool(JarvisDelegate()))  # disabled
-    with pytest.raises(DelegationNotConfigured):
-        await reg.run(
-            ToolCall(id="1", name="delegate_to_jarvis", arguments={"title": "t", "brief": "b"})
-        )
+    result = await reg.run(
+        ToolCall(id="1", name="delegate_to_jarvis", arguments={"title": "t", "brief": "b"})
+    )
+    assert result["tool"] == "delegate_to_jarvis"
+    assert "not enabled" in result["error"]

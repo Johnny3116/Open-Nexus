@@ -22,8 +22,10 @@ def build_provider(name: str, cfg: Config) -> Provider:
     if pc.type == "anthropic":
         from open_nexus.providers.anthropic import AnthropicProvider
 
+        if not cfg.secrets.anthropic_api_key:
+            raise ValueError("anthropic provider needs ANTHROPIC_API_KEY (set it in .env)")
         return AnthropicProvider(
-            api_key=cfg.secrets.anthropic_api_key or "", model=pc.model or "claude-sonnet-4-6"
+            api_key=cfg.secrets.anthropic_api_key, model=pc.model or "claude-sonnet-4-6"
         )
     if pc.type == "openai":
         from open_nexus.providers.openai import OpenAIProvider

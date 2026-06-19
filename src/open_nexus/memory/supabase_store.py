@@ -39,7 +39,13 @@ class SupabaseStore:
             "tool_name": tool_name,
         }
         # id, created_at (and later the embedding) are filled by the DB.
-        data = client.table("messages").insert(row).execute().data[0]
+        rows = client.table("messages").insert(row).execute().data
+        if not rows:
+            raise RuntimeError(
+                "Supabase insert into messages returned no row "
+                "(check RLS policy / table constraints)"
+            )
+        data = rows[0]
         return StoredMessage(
             id=str(data["id"]),
             session_id=session_id,

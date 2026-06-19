@@ -32,6 +32,8 @@ class Gateway:
         sessions: SessionRegistry | None = None,
         active_model: str = "echo",
         rate_limiter: TokenBucket | None = None,
+        tools=None,
+        approvals=None,
     ) -> None:
         self.provider = provider
         self.store = store
@@ -40,6 +42,10 @@ class Gateway:
         self.sessions = sessions or SessionRegistry()
         self.active_model = active_model
         self.rate_limiter = rate_limiter or TokenBucket()
+        # Optional Phase-3 wiring: a ToolRegistry and the ApprovalManager whose
+        # pending queue the API's approve/reject endpoints drive.
+        self.tools = tools
+        self.approvals = approvals
 
     async def handle(self, msg: InboundMessage) -> tuple[str, str]:
         """Process one inbound message → (reply_text, session_id).
@@ -65,6 +71,7 @@ class Gateway:
                 provider=self.provider,
                 assembler=self.assembler,
                 store=self.store,
+                tools=self.tools,
                 trace=Trace(state.trace_id),
             )
         return reply, state.session_id

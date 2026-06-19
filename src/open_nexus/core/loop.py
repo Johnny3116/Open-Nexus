@@ -59,7 +59,7 @@ async def run_turn(
         messages.append(Message(role=Role.ASSISTANT, content=resp.text))
         for call in resp.tool_calls:
             trace.emit(Event.TOOL_REQUESTED, tool=call.name)
-            result = await tools.run(call, trace=trace)
+            result = await tools.run(call, trace=trace, store=store, session_id=state.session_id)
             messages.append(Message(role=Role.TOOL, content=str(result), tool_name=call.name))
 
     # Exhausted the step budget without a final answer.

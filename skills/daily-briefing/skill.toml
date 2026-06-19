@@ -2,6 +2,8 @@ id = "daily-briefing"
 name = "Daily briefing"
 version = "0.1.0"
 entrypoint = "open_nexus.tools.research"
+description = "Assemble a short daily briefing and deliver it to a channel."
+keywords = ["briefing", "brief", "today", "schedule", "morning", "what's on"]
 
 [permissions]
 network = true
